@@ -1,0 +1,6 @@
+{
+    "port": 5000,
+    "jwtSecret": "masterit15 pro",
+    "mongoUri": "mongodb://localhost/ams",
+    "baseUrl": "http://localhost:5000"
+}
