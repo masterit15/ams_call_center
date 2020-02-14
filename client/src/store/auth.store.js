@@ -15,18 +15,21 @@ export default ({
     SET_USERS(state, users) {
       state.users = users
     },
+    SET_LOGOUT(state) {
+      state.access_token = ''
+    },
   },
   actions: {
     getUsers({ commit }, params) {
-      axios.get('http://localhost:5000/api/auth/users', params ).then(response => {
+      axios.get('/api/auth/users', params ).then(response => {
           if (response.status === 200) {
             let users = response.data.users.results
             commit('SET_USERS', users)
           }
         });
     },
-    async auth({commit}, authData) {
-     let res = await axios.post('http://localhost:5000/api/auth/login', authData)
+    async auth({ commit }, data) {
+      let res = await axios.post('/api/auth/login', data)
       if (res.status === 200) {
         let access_token = res.data.token
         let user = res.data
@@ -37,30 +40,36 @@ export default ({
           }
         return res
     },
-    register({ commit }, authData){
-        axios.post('http://localhost:5000/api/auth/register', authData)
-          .then(response => {
-            console.log(response.data)
-          });
+    async register({ commit }, data){
+      let res = await axios.post('/api/auth/register', data)
+      return res
     },
-    editUser({ commit }, authData) {
-      axios.put('http://localhost:5000/api/auth/edit', authData)
-        .then(response => {
-          console.log(response.data)
-        });
+    async getUser({ commit }, data) {
+      let res = await axios.get('/api/auth/user', {
+        params: {
+          id: data
+        }
+      })
+      return res
     },
-    deleteUser({ commit }, authData) {
-      axios.delete('http://localhost:5000/api/auth/edit', authData)
-        .then(response => {
-          console.log(response.data)
-        });
+    async editUser({ commit }, data) {
+     let res = await axios.put('/api/auth/edit', data)
+     return res
     },
-    async logout({commit}){
-      await localStorage.removeItem('access_token')
+    async deleteUser({ commit }, data) {
+      let res = await axios.delete('/api/auth/delete', {
+        params: {
+          id: data
+        }
+      })
+        return res
+    },
+    logout({commit}){
+      localStorage.removeItem('access_token')
       localStorage.removeItem('user_name')
       localStorage.removeItem('login')
       delete axios.defaults.headers.common['Authorization']
-      router.push('/login')
+      commit('SET_LOGOUT')
     }
   },
   getters: {

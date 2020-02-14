@@ -1,0 +1,119 @@
+<$__>
+    <strictMode>true</strictMode>
+    <selected/>
+    <shardval/>
+    <saveError/>
+    <validationError/>
+    <adhocPaths/>
+    <removing/>
+    <inserting/>
+    <saving/>
+    <version/>
+    <getters/>
+    <_id>
+        <_bsontype>ObjectID</_bsontype>
+        <id>
+            <0>94</0>
+            <1>42</1>
+            <2>186</2>
+            <3>206</3>
+            <4>7</4>
+            <5>127</5>
+            <6>111</6>
+            <7>18</7>
+            <8>12</8>
+            <9>48</9>
+            <10>218</10>
+            <11>110</11>
+        </id>
+    </_id>
+    <populate/>
+    <populated/>
+    <wasPopulated>false</wasPopulated>
+    <scope/>
+    <activePaths>
+        <paths>
+            <fio>init</fio>
+            <address>init</address>
+            <_id>init</_id>
+            <text>init</text>
+            <selectstatus>init</selectstatus>
+            <creDate>init</creDate>
+            <conDate>init</conDate>
+            <regNumber>init</regNumber>
+            <phoneNumber>init</phoneNumber>
+            <__v>init</__v>
+        </paths>
+        <states>
+            <ignore/>
+            <default/>
+            <init>
+                <_id>true</_id>
+                <address>true</address>
+                <fio>true</fio>
+                <text>true</text>
+                <selectstatus>true</selectstatus>
+                <creDate>true</creDate>
+                <conDate>true</conDate>
+                <regNumber>true</regNumber>
+                <phoneNumber>true</phoneNumber>
+                <__v>true</__v>
+            </init>
+            <modify/>
+            <require/>
+        </states>
+        <stateNames>require</stateNames>
+        <stateNames>modify</stateNames>
+        <stateNames>init</stateNames>
+        <stateNames>default</stateNames>
+        <stateNames>ignore</stateNames>
+    </activePaths>
+    <pathsToScopes/>
+    <cachedRequired/>
+    <session/>
+    <$setCalled/>
+    <ownerDocument/>
+    <fullPath/>
+    <emitter>
+        <_events/>
+        <_eventsCount>0</_eventsCount>
+        <_maxListeners>0</_maxListeners>
+    </emitter>
+    <$options>
+        <skipId>true</skipId>
+        <isNew>false</isNew>
+        <willInit>true</willInit>
+    </$options>
+</$__>
+<isNew>false</isNew>
+<errors/>
+<_doc>
+    <address>Россия, Республика Северная Осетия — Алания, Владикавказ, улица Галковского, 233 </address>
+    <_id>
+        <_bsontype>ObjectID</_bsontype>
+        <id>
+            <0>94</0>
+            <1>42</1>
+            <2>186</2>
+            <3>206</3>
+            <4>7</4>
+            <5>127</5>
+            <6>111</6>
+            <7>18</7>
+            <8>12</8>
+            <9>48</9>
+            <10>218</10>
+            <11>110</11>
+        </id>
+    </_id>
+    <fio>Пилиев Шалва Соломонович</fio>
+    <text>тест АУЕ!!</text>
+    <selectstatus>В работе</selectstatus>
+    <creDate/>
+    <conDate/>
+    <regNumber>12323444</regNumber>
+    <phoneNumber>89280704011</phoneNumber>
+    <__v>0</__v>
+</_doc>
+<$locals/>
+<$init>true</$init>

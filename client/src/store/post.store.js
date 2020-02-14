@@ -23,8 +23,12 @@ export default ({
     },
   },
   actions: {
+    async exportsXML(ctx, data){
+      let res = await axios.get('/api/posts/export', data)
+      return res
+    },
     addPost({ commit, dispatch }, post) {
-      axios.post('http://localhost:5000/api/posts/add', post)
+      axios.post('/api/posts/add', post)
         .then(response => {
           console.log(response.data)
           if (response.data.success) {
@@ -37,7 +41,7 @@ export default ({
     },
     loadPost({ commit }, params) {
       let pagin = params.pagin
-      axios.get("http://localhost:5000/api/posts/",
+      axios.get("/api/posts/",
         {
           params: pagin
         }
@@ -68,7 +72,7 @@ export default ({
     },
     editPost({ commit}, post) {
       if (confirm("Вы уверены что хотите редактировать обращение?")) {
-        axios.put("http://localhost:5000/api/posts/", post).then(response => {
+        axios.put("/api/posts/", post).then(response => {
           if (response.data.success) {
             let message = response.data.message
             commit("SET_MESSAGE", message)
@@ -81,7 +85,7 @@ export default ({
     },
     deletePost({ commit, dispatch }, id, index) {
       if (confirm("Вы уверены что хотите удалить обращение?")) {
-        axios.delete(`http://localhost:5000/api/posts/${id}`).then(response => {
+        axios.delete(`/api/posts/${id}`).then(response => {
           if (response.data.success) {
             let message = response.data.message
             dispatch('loadPost')

@@ -10,6 +10,10 @@
           </v-btn>
         </v-btn-toggle>
         <v-spacer></v-spacer>
+<v-btn @click="exportXML(posts)">
+Выгрузить в XML
+</v-btn>
+        
       <v-col cols="2">
         <v-select
           v-model="searchParamVal"
@@ -442,6 +446,17 @@ export default {
     ...mapGetters(["posts", "postsstatus", "message", "pagination"])
   },
   methods: {
+    ...mapActions(["loadPost", "editPost", "deletePost", "exportsXML"]),
+    exportXML(data){
+      this.exportsXML(data)
+      .then(res =>{
+        console.log(res.data.files)
+        window.open(res.data.files, 'Download')
+      })
+      .catch(error => {
+        console.log(error)
+      })
+    },
     showText(index) {
       if (this.eYndex == index) {
         return true;
@@ -461,7 +476,6 @@ export default {
       };
       this.loadPost(params);
     },
-    ...mapActions(["loadPost", "editPost", "deletePost"]),
     statuscolor(val) {
       switch (val) {
         case "Не обработанная":

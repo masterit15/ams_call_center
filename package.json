@@ -17,7 +17,10 @@
     "bcrypt": "^3.0.6",
     "concurrently": "^5.0.2",
     "cross-env": "^7.0.0",
-    "nodemon": "^2.0.2"
+    "i": "^0.3.6",
+    "nodemon": "^2.0.2",
+    "npm": "^6.13.7",
+    "xml-js": "^1.6.11"
   },
   "dependencies": {
     "@babel/preset-env": "^7.8.4",

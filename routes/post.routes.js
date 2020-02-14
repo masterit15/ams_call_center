@@ -1,7 +1,40 @@
 const { Router } = require('express')
+const path = require('path')
 const auth = require('../middleware/auth.middleware')
+const convert = require('xml-js')
+const fs = require('fs')
 const Post = require('../models/Post');
 const router = Router()
+
+/*
+    метод экспорта обращений
+*/
+
+router.get('/export', async (req, res) => {
+    await Post.findOne({
+        // _id: id
+    }).then(async (post) => {
+        const exportXML = await convert.json2xml(post, { compact: true, ignoreComment: true, spaces: 4 });
+        var date = new Date();
+        var datenow = date.getDate() + '-' + date.getFullYear() + '-' + date.getFullYear() + '_' + date.getHours() + '-' + date.getMinutes() + '-' + date.getSeconds()
+        var files = 'export/' + datenow + '_export.xml'
+        fs.writeFileSync(files, exportXML)
+        setTimeout(() => {
+            rmDir('export')
+        }, 1800000);
+        return res.json({
+            success: true,
+            message: 'Экспорт обращений завершен',
+            files: path.resolve(__dirname, files)
+        });
+    }).catch((err) => {
+        return res.json({
+            success: false,
+            message: 'Ошибка экспорта обращений',
+            err: err
+        });
+    });
+});
 /*
     метод отдачи обращений
 */
@@ -83,6 +116,10 @@ router.get('/:id', async (req, res, next) => {
         });
     });
 });
+/*
+    метод обновления обращения по ID
+*/
+
 
 /*
     метод обновления обращения по ID
@@ -142,6 +179,7 @@ router.put('/', auth, async (req, res, next) => {
     метод удаления обращения по ID
 */
 router.delete('/:id', auth, (req, res, next) => {
+    
     let id = req.params.id;
     Post.findOneAndDelete({
         _id: id
@@ -159,6 +197,26 @@ router.delete('/:id', auth, (req, res, next) => {
         });
     });
 })
+/*
+    функция очистки папки экспорта
+*/
+rmDir = function(dirPath, removeSelf) {
+    if (removeSelf === undefined)
+        removeSelf = true;
+    try { var files = fs.readdirSync(dirPath); }
+    catch (e) { return; }
+    if (files.length > 0)
+        for (var i = 0; i < files.length; i++) {
+            var filePath = dirPath + '/' + files[i];
+            if (fs.statSync(filePath).isFile())
+                fs.unlinkSync(filePath);
+            else
+                rmDir(filePath);
+        }
+    if (removeSelf)
+        fs.rmdirSync(dirPath);
+};
+
 /*
     функция предварительной обработки, сортировки и фильтрации, перед отдачей на клиентскую часть
 */

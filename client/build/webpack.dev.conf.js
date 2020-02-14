@@ -11,10 +11,16 @@ const devWebpackConfig = merge(baseWebpackConfig, {
   devServer: {
     contentBase: baseWebpackConfig.externals.paths.dist,
     port: 8081,
+    historyApiFallback: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+      },
+    },
     overlay: {
       warnings: true,
       errors: true
-    }
+    },
   },
   plugins: [
     new webpack.SourceMapDevToolPlugin({
