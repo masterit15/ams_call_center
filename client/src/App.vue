@@ -13,27 +13,19 @@ import EmptyLayout from '~/layouts/Emptylayout.vue'
 import MainLayout from '~/layouts/Mainlayout.vue'
 import {mapActions, mapGetters} from 'vuex'
 export default {
-  data() {
-    return {
-    }
-  },
-  watch: {
-  },
   computed: {
     ...mapGetters(['isLoginedIn']),
     layout(){
       return (this.$route.meta.layout || 'empty') + '-layout'
     }
   },
-  methods: {
-    
-  },
   components: {
     EmptyLayout, MainLayout
   }
 };
 </script>
-<style >
+<style>
+@import '../node_modules/air-datepicker/dist/css/datepicker.css';
 .main-content {
   position: relative;
 }

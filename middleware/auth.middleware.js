@@ -8,8 +8,9 @@ module.exports = (req, res, next) => {
 
   try {
     const token = req.headers.authorization.split(' ')[1] // "Bearer TOKEN"
+    
     if (!token) {
-      return res.status(401).json({ message: 'Нет авторизации' })
+      return res.status(401).json({ message: 'Нет авторизации или закончилась сессия' })
     }
 
     const decoded = jwt.verify(token, config.get('jwtSecret'))
@@ -17,6 +18,10 @@ module.exports = (req, res, next) => {
     next()
 
   } catch (e) {
-    res.status(401).json({ message: 'Нет авторизации' })
+    if (e.message === 'jwt expired'){
+      res.json({ message: 'Ваш токен истек в ' + e.expiredAt })
+    }else{
+      res.status(401).json({ message: e.message + ' ' + e.expiredAt })
+    }
   }
 }

@@ -2,18 +2,23 @@
   <div>
     <v-toolbar dark color="indigo darken-3" class="mb-1">
       <v-btn-toggle v-model="sortIsmain" mandatory>
-          <v-btn large depressed color="blue" value="main">
-            Мои
-          </v-btn>
-          <v-btn large depressed color="blue" value="all">
-            Все
-          </v-btn>
-        </v-btn-toggle>
-        <v-spacer></v-spacer>
-<v-btn @click="exportXML(posts)">
-Выгрузить в XML
-</v-btn>
-        
+        <v-btn large depressed color="blue" value="main">Мои</v-btn>
+        <v-btn large depressed color="blue" value="all">Все</v-btn>
+      </v-btn-toggle>
+      <v-spacer></v-spacer>
+      <v-btn @click="exportXML(posts)">Выгрузить в XML</v-btn>
+
+      <input 
+      id="datefilter" 
+      type="text" 
+      data-multiple-dates-separator=" - " 
+      class='datepicker-here '/>
+
+      <v-dialog v-model="expDialog" max-width="290">
+        <v-card>
+          <a class="btn" :href="expFile" download>Скачать</a>
+        </v-card>
+      </v-dialog>
       <v-col cols="2">
         <v-select
           v-model="searchParamVal"
@@ -80,7 +85,14 @@
         </v-btn>
       </v-snackbar>
       <v-row>
-        <v-col v-for="(item, index) in posts" :key="index" cols="12" sm="6" md="4" lg="4">
+        <v-col
+          v-for="(item, index) in posts"
+          :key="index"
+          cols="12"
+          sm="6"
+          md="4"
+          lg="4"
+        >
           <v-card class="mx-auto" min-height="460">
             <v-toolbar dark :color="statuscolor(item.selectstatus)">
               <v-toolbar-title>{{item.selectstatus}}</v-toolbar-title>
@@ -90,12 +102,12 @@
             <v-card-subtitle>
               <span>
                 <strong>Дата:</strong>
-                {{item.creDate | moment("YYYY-MM-DD в HH:mm:ss")}}
+                {{item.creDate | Fdate('data') }}
               </span>
               <v-divider></v-divider>
               <span>
                 <strong>Контрольная дата:</strong>
-                {{item.conDate | moment("YYYY-MM-DD в HH:mm:ss")}}
+                {{item.conDate | Fdate('data') }}
               </span>
               <v-divider></v-divider>
               <span>
@@ -165,162 +177,29 @@
         <v-pagination v-model="page" :length="pageLength" :total-visible="limit"></v-pagination>
       </v-row>
     </v-container>
-    <transition name="slide-editform">
-      <div v-if="editor" class="add_form elevation-20">
-        <div class="add_form_close" :elevation="7">
-          <v-btn icon @click="editor = false" color="error">
-            <v-icon>fa-close</v-icon>
-          </v-btn>
-        </div>
-        <v-divider></v-divider>
-        <v-form ref="form">
-          <v-container fluid>
-            <v-alert
-              v-model="alert"
-              border="left"
-              close-text="Закрыть"
-              color="light-green accent-1"
-              dark
-              dismissible
-            >{{alertText}}</v-alert>
-            <v-row>
-              <v-col cols="12" sm="6">
-                <v-text-field
-                  v-model="post.regNumber"
-                  label="Регистр. номер"
-                  prepend-icon="fa-address-card-o"
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-select
-                  v-model="post.selectstatus"
-                  :items="status"
-                  label="Статус"
-                  prepend-icon="fa-share"
-                ></v-select>
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-menu
-                  ref="create_date"
-                  v-model="post.create_date"
-                  :close-on-content-click="false"
-                  :return-value.sync="post.creDate"
-                  transition="scale-transition"
-                  offset-y
-                  min-width="290px"
-                >
-                  <template v-slot:activator="{ on }">
-                    <v-text-field
-                      v-model="post.creDate"
-                      label="Дата создания"
-                      prepend-icon="fa-calendar"
-                      readonly
-                      v-on="on"
-                    ></v-text-field>
-                  </template>
-                  <v-date-picker v-model="post.creDate" no-title scrollable locale="ru">
-                    <v-spacer></v-spacer>
-                    <v-btn text color="primary" @click="post.create_date = false">Закрыть</v-btn>
-                    <v-btn
-                      text
-                      color="primary"
-                      @click="$refs.create_date.save(post.creDate)"
-                    >Сохранить</v-btn>
-                  </v-date-picker>
-                </v-menu>
-              </v-col>
-              <v-col cols="12" sm="6">
-                <v-menu
-                  ref="control_date"
-                  v-model="post.control_date"
-                  :close-on-content-click="false"
-                  :return-value.sync="post.conDate"
-                  transition="scale-transition"
-                  offset-y
-                  min-width="290px"
-                >
-                  <template v-slot:activator="{ on }">
-                    <v-text-field
-                      v-model="post.conDate"
-                      label="Контрольная дата"
-                      prepend-icon="fa-calendar"
-                      readonly
-                      v-on="on"
-                    ></v-text-field>
-                  </template>
-                  <v-date-picker v-model="post.conDate" no-title scrollable locale="ru">
-                    <v-spacer></v-spacer>
-                    <v-btn text color="primary" @click="post.control_date = false">Закрыть</v-btn>
-                    <v-btn
-                      text
-                      color="primary"
-                      @click="$refs.control_date.save(post.conDate)"
-                    >Сохранить</v-btn>
-                  </v-date-picker>
-                </v-menu>
-              </v-col>
-              <v-spacer></v-spacer>
-              <v-col cols="12">
-                <v-text-field v-model="post.fio" label="ФИО" prepend-icon="fa-user"></v-text-field>
-              </v-col>
-              <v-col cols="12">
-                <v-combobox
-                  v-model="post.address"
-                  :items="addressArr"
-                  :loading="loading"
-                  :search-input.sync="addresssearch"
-                  label="Адрес"
-                  prepend-icon="fa-map-marker"
-                />
-              </v-col>
-              <v-col cols="12">
-                <v-text-field
-                  v-model="post.phoneNumber"
-                  label="Номер телефона"
-                  prepend-icon="fa-phone"
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12">
-                <v-textarea
-                  v-model="post.text"
-                  name="input-7-1"
-                  label="Текст обращения"
-                  prepend-icon="fa-pencil-square-o"
-                  value
-                  hint
-                ></v-textarea>
-              </v-col>
-            </v-row>
-            <v-card-actions>
-              <!-- <v-spacer></v-spacer> -->
-              <v-btn
-                :loading="saveLoader"
-                :disabled="saveLoader"
-                color="info"
-                @click="loader = 'saveLoader', editPost(post)"
-              >
-                Сохранить
-                <template v-slot:loader>
-                  <span class="custom-loader">
-                    <v-icon light>fa-refresh</v-icon>
-                  </span>
-                </template>
-              </v-btn>
-              <v-btn color="error" @click="editor = false">закрыть</v-btn>
-            </v-card-actions>
-          </v-container>
-        </v-form>
-      </div>
+
+    <transition name="slide-addform">
+      <EditForm
+      v-if="editor"
+      :formData="post"
+      />
     </transition>
   </div>
 </template>
 <script>
-import axios from "axios"
-import ymaps from "ymaps"
-import { mapGetters, mapActions } from "vuex"
+import axios from "axios";
+import ymaps from "ymaps";
+import { mapGetters, mapActions } from "vuex";
+import EditForm from '~/components/EditForm.vue'
 export default {
+  components: {
+    EditForm
+  },
   data() {
     return {
+      events: [],
+      input: null,
+      nonce: 0,
       eYndex: null,
       loader: null,
       postloading: true,
@@ -341,6 +220,8 @@ export default {
       searchParamVal: "fio",
       loading: false,
       saveLoader: false,
+      expFile: "",
+      expDialog: false,
       editor: false,
       snackbar: false,
       multiLine: true,
@@ -351,7 +232,7 @@ export default {
       search: "",
       sortDesc: false,
       sortBy: "Все",
-      sortIsmain: 'all',
+      sortIsmain: "all",
       editMode: false,
       itemsPerPageArray: [6, 9, 12],
       items: [],
@@ -363,7 +244,7 @@ export default {
     };
   },
   watch: {
-    sortIsmain(){
+    sortIsmain() {
       this.getPosts();
     },
     searchParamVal() {
@@ -442,20 +323,43 @@ export default {
       this.postloading = false;
     }
   },
+  mounted() {
+    $('#datefilter').datepicker({
+      timepicker: true,
+      language: 'ru',
+      range: true,
+      multipledatesseparator: " - "
+      })
+  },
   computed: {
-    ...mapGetters(["posts", "postsstatus", "message", "pagination"])
+    ...mapGetters(["posts", "postsstatus", "message", "pagination"]),
+    timeline () {
+        return this.events.slice().reverse()
+      },
   },
   methods: {
     ...mapActions(["loadPost", "editPost", "deletePost", "exportsXML"]),
-    exportXML(data){
+    comment () {
+        const time = (new Date()).toTimeString()
+        this.events.push({
+          id: this.nonce++,
+          text: this.input,
+          time: time.replace(/:\d{2}\sGMT-\d{4}\s\((.*)\)/, (match, contents, offset) => {
+            return ` ${contents.split(' ').map(v => v.charAt(0)).join('')}`
+          }),
+        })
+
+        this.input = null
+      },
+    exportXML(data) {
       this.exportsXML(data)
-      .then(res =>{
-        console.log(res.data.files)
-        window.open(res.data.files, 'Download')
-      })
-      .catch(error => {
-        console.log(error)
-      })
+        .then(res => {
+          this.expFile = res.data.files;
+          this.expDialog = true;
+        })
+        .catch(error => {
+          console.log(error);
+        });
     },
     showText(index) {
       if (this.eYndex == index) {
@@ -489,9 +393,12 @@ export default {
           break;
       }
     },
-    openEditForm(post) {
-      this.post = post;
-      this.editor = true;
+    async openEditForm(post) {
+      this.post = await post;
+      setTimeout(() => {
+        this.editor = !this.editor;
+      }, 0);
+      
     },
     updateItemsPerPage(number) {
       this.limit = number;
@@ -519,10 +426,18 @@ export default {
         });
       });
     }
-  }
+  },
 };
 </script>
-<style scoped>
+<style>
+.slide-addform-enter-active {
+  transition: all 0.2s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.slide-addform-enter,
+.slide-addform-leave-to {
+  transform: translateX(50px);
+  opacity: 0;
+}
 .v-card__subtitle span {
   display: block;
   padding: 10px 0px 2px 0px;
@@ -545,6 +460,10 @@ export default {
   top: 0;
   bottom: 0;
   margin: auto;
+}
+.v-sheet{
+  position: relative;
+  z-index: 99;
 }
 .v-card__text {
   max-height: 185px;

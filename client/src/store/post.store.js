@@ -28,9 +28,9 @@ export default ({
       return res
     },
     addPost({ commit, dispatch }, post) {
+      console.log(post)
       axios.post('/api/posts/add', post)
         .then(response => {
-          console.log(response.data)
           if (response.data.success) {
             dispatch('loadPost')
             message = "Обращение успешно добавлено"
@@ -47,7 +47,6 @@ export default ({
         }
       )
       .then(response => {
-        
         var poststatus = ["Все"]
         for (let i in response.data.posts.results) {
           poststatus.push(response.data.posts.results[i].selectstatus)
@@ -65,23 +64,21 @@ export default ({
         commit("SET_PAGIN", pagin)
       })
       .catch(error =>{
-        if (error){
-          router.push('/')
-        }
+        // console.log(error)
+        // if (error){
+        //   router.push('/')
+        // }
       })
     },
-    editPost({ commit}, post) {
+    async editPost({commit}, post) {
       if (confirm("Вы уверены что хотите редактировать обращение?")) {
-        axios.put("/api/posts/", post).then(response => {
-          if (response.data.success) {
-            let message = response.data.message
-            commit("SET_MESSAGE", message)
-          } else {
-            let message = response.data.message
-            commit("SET_MESSAGE", message)
-          }
-        });
+      let res = await axios.put("/api/posts/", post)
+      return res
       }
+    },
+    async editPostTimeline({ commit, dispatch }, post) {
+        let res = await axios.put("/api/posts/timeline", post)
+        return res
     },
     deletePost({ commit, dispatch }, id, index) {
       if (confirm("Вы уверены что хотите удалить обращение?")) {

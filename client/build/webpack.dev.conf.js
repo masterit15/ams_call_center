@@ -25,6 +25,11 @@ const devWebpackConfig = merge(baseWebpackConfig, {
   plugins: [
     new webpack.SourceMapDevToolPlugin({
       filename: "[file].map"
+    }),
+    new webpack.ProvidePlugin({
+      $: "jquery/dist/jquery.min.js",
+      jQuery: "jquery/dist/jquery.min.js",
+      "window.jQuery": "jquery/dist/jquery.min.js",
     })
   ]
 });

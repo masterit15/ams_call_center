@@ -4,6 +4,7 @@ const auth = require('../middleware/auth.middleware')
 const convert = require('xml-js')
 const fs = require('fs')
 const Post = require('../models/Post');
+const Timeline = require('../models/Timeline');
 const router = Router()
 
 /*
@@ -48,17 +49,32 @@ router.get('/', auth, paginatedResults(Post), (req, res) => {
 /* 
     метод добавления обращения
 */
+function formatedate(dateTime){
+    var dateTime = dateTime.split(" ");//dateTime[0] = date, dateTime[1] = time
+    var date = dateTime[0].split(".");
+    var time = dateTime[1].split(":");
+    //(year, month, day, hours, minutes, seconds, milliseconds)
+    return new Date(date[2], date[1], date[0], time[0], time[1], time[2], 0);
+}
 router.post('/add', auth, async (req, res, next) => {
+
+
     let fio             = req.body.fio
     let text            = req.body.text
     let selectstatus    = req.body.selectstatus
     let address         = req.body.address
-    let creDate         = req.body.creDate
-    let conDate         = req.body.conDate
+    let creDate = formatedate(req.body.creDate)
+    let conDate = formatedate(req.body.conDate)
     let regNumber       = req.body.regNumber
     let phoneNumber     = req.body.phoneNumber
     let mobileNumber    = req.body.mobileNumber
     let owner = req.user.userId
+    let timeline = []
+    for (i in req.body.timeline){
+        req.body.timeline[i].time = formatedate(req.body.timeline[i].time)
+        timeline.push(req.body.timeline[i])
+    }
+
     // валидация полученныйх данных
     if (fio === undefined || text === undefined || address === undefined) {
         return res.json({
@@ -77,7 +93,8 @@ router.post('/add', auth, async (req, res, next) => {
             regNumber,
             phoneNumber,
             mobileNumber,
-            owner
+            owner,
+            timeline
         });
         // сохранение обращения
         await newPost.save().then((post) => {
@@ -117,16 +134,46 @@ router.get('/:id', async (req, res, next) => {
     });
 });
 /*
-    метод обновления обращения по ID
+    метод добавления в таймлайн обращения по ID
 */
-
+router.put('/timeline', auth, async (req, res, next) => {
+    let id = req.body.postId;
+    let timeline = []
+    for (i in req.body.timeline) {
+        timeline.push(req.body.timeline[i])
+    }
+    await Post.findOne({
+        _id: id
+    }).then((post) => {
+        // post.timeline = timeline
+        post.updateOne({ timeline: timeline }, { timeline: timeline })
+            .then((post) => {
+                return res.json({
+                    success: true,
+                    message: 'Обращение успешно обновлено',
+                    post: post
+                });
+            }).catch((err) => {
+                return res.json({
+                    success: false,
+                    message: 'Не удается обновить обращение',
+                    err: err
+                });
+            });
+    }).catch((err) => {
+        return res.json({
+            success: false,
+            message: 'Ошибка! что-то пошло не так.',
+            err: err
+        });
+    });
+});
 
 /*
     метод обновления обращения по ID
 */
 
 router.put('/', auth, async (req, res, next) => {
-
     let fio = req.body.fio
     let text = req.body.text
     let selectstatus = req.body.selectstatus
@@ -201,8 +248,8 @@ router.delete('/:id', auth, (req, res, next) => {
     функция очистки папки экспорта
 */
 rmDir = function(dirPath, removeSelf) {
-    if (removeSelf === undefined)
-        removeSelf = true;
+    // if (removeSelf === undefined)
+    //     removeSelf = true;
     try { var files = fs.readdirSync(dirPath); }
     catch (e) { return; }
     if (files.length > 0)
@@ -213,8 +260,8 @@ rmDir = function(dirPath, removeSelf) {
             else
                 rmDir(filePath);
         }
-    if (removeSelf)
-        fs.rmdirSync(dirPath);
+    // if (removeSelf)
+    //     fs.rmdirSync(dirPath);
 };
 
 /*
