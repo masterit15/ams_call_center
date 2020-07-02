@@ -13,11 +13,26 @@ import EmptyLayout from '~/layouts/Emptylayout.vue'
 import MainLayout from '~/layouts/Mainlayout.vue'
 import {mapActions, mapGetters} from 'vuex'
 export default {
+  sockets: {
+    connect: function() {
+      console.log("Soket connect")
+    }
+  },
+  created() {
+    this.fetchWithAuth()
+    window.onbeforeunload = () => {
+      this.$socket.emit("userJoined", this.user)
+    }
+            
+  },
   computed: {
-    ...mapGetters(['isLoginedIn']),
+    ...mapGetters(['isLoginedIn', 'user']),
     layout(){
       return (this.$route.meta.layout || 'empty') + '-layout'
     }
+  },
+  methods: {
+    ...mapActions(['fetchWithAuth'])
   },
   components: {
     EmptyLayout, MainLayout

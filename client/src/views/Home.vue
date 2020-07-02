@@ -1,6 +1,44 @@
 <template>
   <v-container>
     <v-row>
+      <v-col col="12" sm="4">
+        <v-card class="mx-auto" outlined color="red" dark>
+          <v-card-title>
+            <v-icon large left>fa-bar-chart</v-icon>
+            <span class="title font-weight-light">За год</span>
+          </v-card-title>
+
+          <v-card-text class="headline font-weight-bold">
+      5699
+    </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col col="12" sm="4">
+        <v-card class="mx-auto" outlined color="orange" dark>
+          <v-card-title>
+            <v-icon large left>fa-bar-chart</v-icon>
+            <span class="title font-weight-light">За месяц</span>
+          </v-card-title>
+
+          <v-card-text class="headline font-weight-bold">
+      256
+    </v-card-text>
+        </v-card>
+      </v-col>
+      <v-col col="12" sm="4">
+        <v-card class="mx-auto" outlined color="green" dark>
+          <v-card-title>
+            <v-icon large left>fa-bar-chart</v-icon>
+            <span class="title font-weight-light">За сегодня</span>
+          </v-card-title>
+
+          <v-card-text class="headline font-weight-bold">
+      536
+    </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+    <v-row>
       <v-col cols="12" sm="6">
         <v-card class="mt-6 mx-auto">
           <v-sheet
@@ -19,11 +57,11 @@
           </v-sheet>
 
           <v-card-text class="pt-0">
-            <div class="title font-weight-light mb-2">User Registrations</div>
-            <div class="subheading font-weight-light grey--text">Last Campaign Performance</div>
+            <div class="title font-weight-light mb-2">За первое полугодие</div>
+            <div class="subheading font-weight-light grey--text">Поступившие обращения</div>
             <v-divider class="my-2"></v-divider>
             <v-icon class="mr-2" small>mdi-clock</v-icon>
-            <span class="caption grey--text font-weight-light">last registration 26 minutes ago</span>
+            <span class="caption grey--text font-weight-light">Количество за каждый месяц</span>
           </v-card-text>
         </v-card>
       </v-col>
@@ -45,26 +83,59 @@
           </v-sheet>
 
           <v-card-text class="pt-0">
-            <div class="title font-weight-light mb-2">User Registrations</div>
-            <div class="subheading font-weight-light grey--text">Last Campaign Performance</div>
+            <div class="title font-weight-light mb-2">За второе полугодие</div>
+            <div class="subheading font-weight-light grey--text">Поступившие обращения</div>
             <v-divider class="my-2"></v-divider>
             <v-icon class="mr-2" small>mdi-clock</v-icon>
-            <span class="caption grey--text font-weight-light">last registration 26 minutes ago</span>
+            <span class="caption grey--text font-weight-light">Количество за каждый месяц</span>
           </v-card-text>
         </v-card>
       </v-col>
+
+      <!-- <pre>{{posts.length}}</pre> -->
     </v-row>
   </v-container>
 </template>
 
 <script>
+import { mapGetters, mapActions } from "vuex";
 export default {
   data: () => ({
-    timeslabels: ["12am", "3am", "6am", "9am", "12pm", "3pm", "6pm", "9pm"],
-    times: [200, 675, 410, 390, 310, 460, 250, 240],
-    countlabels: ["40", "4", "8", "18", "87", "64", "55", "3"],
-    count: [40, 4, 8, 18, 87, 64, 55, 3]
-  })
+    timeslabels: ["январь ", "февраль ", "март ", "фпрель ", "май", "июнь"],
+    times: [200, 675, 410, 390, 310, 200],
+    countlabels: ["июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"],
+    count: [675, 410, 390, 310, 345, 421]
+  }),
+  computed: {
+    ...mapGetters(["posts"])
+    // countlabels(){
+    //   console.log(this.posts)
+    // }
+  },
+  created() {
+    this.getNowDate();
+  },
+  methods: {
+    ...mapActions(["loadPost"]),
+    getNowDate() {
+      var today = new Date();
+      var dd = String(today.getDate()).padStart(2, "0");
+      var mm = String(today.getMonth() + 1).padStart(2, "0"); //January is 0!
+      var yyyy = today.getFullYear();
+      today = dd + "-" + mm + "-" + yyyy;
+      let params = {
+        status: this.sortBy,
+        pagin: {
+          page: 1,
+          limit: 20,
+          status: "Все",
+          dateinterval: new Date(today),
+          userId: this.userId
+        }
+      };
+      this.loadPost(params);
+    }
+  }
 };
 </script>
 <style>

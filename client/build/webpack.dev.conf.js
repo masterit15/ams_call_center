@@ -13,7 +13,7 @@ const devWebpackConfig = merge(baseWebpackConfig, {
     port: 8081,
     historyApiFallback: true,
     proxy: {
-      '/api': {
+      '/': {
         target: 'http://localhost:5000',
       },
     },

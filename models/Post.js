@@ -1,24 +1,28 @@
-const { Schema, model, Types } = require('mongoose')
-const schema = new Schema({
-  // _id: { type: Number },
-  fio: { type: String, required: true, text: true, index: true },
-  text: { type: String, text: true, index: true },
-  selectstatus: { type: String, text: true, index: true },
-  regNumber: { type: Number},
-  address: { type: String, default: "Не обработана", text: true, index: true },
-  creDate: { type: Date, default: Date.now, index: true},
-  conDate: { type: Date, index: true},
-  phoneNumber: { type: String, pattern: "^([0-9]{3}-[0-9]{3}-[0-9]{4}$", text: true, index: true},
-  mobileNumber: { type: String, pattern: "^([0-9]{3}-[0-9]{3}-[0-9]{4}$", text: true, index: true},
-  owner: { type: Types.ObjectId, ref: 'User' },
-  timeline: [{ 
-    id: { type: Number, default: 1 },
-    event: {type: String, default: 'Comment'},
-    text: {type: String, default: ''},
-    autor: {type: String, default: ''},
-    time: { type: Date, default: Date.now },
-  }]
+const Sequelize = require("sequelize");
+const sequelize = require('../db')
+const User = require('../models/User')
+const Timeline = require('../models/Timeline')
+const Post = sequelize.define("post", {
+  id: {
+    type: Sequelize.INTEGER,
+    autoIncrement: true,
+    primaryKey: true,
+    allowNull: false
+  },
+  fio: {type: Sequelize.STRING, allowNull: false},
+  text: {type: Sequelize.TEXT, allowNull: false},
+  selectstatus: {type: Sequelize.ENUM, values:['Все','Не обработан','В работе','Обработана'], defaultValue: 'Не обработан', allowNull: false},
+  regnumber: {type: Sequelize.INTEGER, allowNull: false},
+  address: {type: Sequelize.STRING, allowNull: false},
+  credate: {
+    type: Sequelize.DATE, 
+    allowNull: false,
+    defaultValue: Sequelize.NOW
+  },
+  condate: {type: Sequelize.DATE, allowNull: true},
+  phonenumber: {type: Sequelize.STRING, allowNull: false},
+  mobilenumber: {type: Sequelize.STRING, allowNull: false},
 })
-
-
-module.exports = model('Post', schema)
+//Post.hasOne(Timeline, { onDelete: "cascade"});
+Post.hasMany(Timeline, { onDelete: "cascade"});
+module.exports = Post

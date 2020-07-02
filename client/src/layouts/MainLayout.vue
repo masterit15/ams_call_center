@@ -7,10 +7,6 @@
         <router-view />
       </transition>
     </main>
-    <footer class="footer">
-      <div class="cophiright">
-        <!-- <p>masterit15</p> -->
-      </div>
-    </footer>
+    <app-footer/>
   </div>
 </template>

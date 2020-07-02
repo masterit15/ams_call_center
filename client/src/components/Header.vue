@@ -1,30 +1,71 @@
 <template>
   <header class="headers">
-    <v-toolbar dark color="indigo">
-      <v-btn class="menu-open" icon @click="miniVar = !miniVar" right>
-        <v-icon>fa-outdent</v-icon>
-      </v-btn>
-      <v-divider vertical></v-divider>
-      <v-tooltip bottom>
+    <v-toolbar >
+      <v-tooltip right>
         <template v-slot:activator="{ on }">
-          <v-btn v-on="on" dark color="amber lighten-3" icon @click="editor = !editor">
+          <v-btn class="add_button" v-on="on" icon @click="openEditForm">
             <v-icon>fa-plus</v-icon>
           </v-btn>
         </template>
         <span>Добавить обращение</span>
       </v-tooltip>
       <v-spacer></v-spacer>
-      <v-divider vertical></v-divider>
-      <v-btn dark icon @click="logouted()">
-        <v-icon>fa-sign-out</v-icon>
+      <v-btn id="user_settings" text x-large class="my-0">
+        <v-avatar v-if="avatar !== ''" color="amber lighten-2 mx-3">
+          <img :src="avatar" :alt="userName" />
+        </v-avatar>
+        <v-avatar v-else color="indigo">
+          <v-icon dark>fa-user</v-icon>
+        </v-avatar>
+        {{userName}}
       </v-btn>
+      <v-menu
+        :close-on-content-click="false"
+        activator="#user_settings"
+        offset-y
+        origin="bottom"
+        transition="slide-y-transition"
+      >
+        <v-card>
+          <v-list dense>
+            <v-list-item-group color="primary">
+              <v-list-item
+                v-for="(item, i) in items"
+                :key="i"
+                icon
+                @click="userSettings(item.fp)"
+                :id="item.fp == 'theam' ? 'theam_setting' : ''"
+              >
+                <v-menu
+                  max-width="320"
+                  :close-on-content-click="false"
+                  activator="#theam_setting"
+                  :nudge-width="300"
+                  left
+                  offset-y
+                  offset-x
+                >
+                  <theam-setting />
+                </v-menu>
+
+                
+                <v-list-item-icon>
+                  <v-icon v-text="item.icon"></v-icon>
+                </v-list-item-icon>
+                <v-list-item-content>
+                  <router-link v-if="item.fp == 'prophile'" to="/prophile">{{item.text}}</router-link>
+                  <v-list-item-title v-else v-text="item.text"></v-list-item-title>
+                </v-list-item-content>
+                
+              </v-list-item>
+            </v-list-item-group>
+          </v-list>
+        </v-card>
+      </v-menu>
     </v-toolbar>
     <v-spacer></v-spacer>
     <transition name="slide-addform">
-      <app-form
-      v-if="editor"
-      addParam="add"
-      />
+      <app-form v-if="editor" :edited="false" addParam="add" />
     </transition>
   </header>
 </template>
@@ -47,7 +88,8 @@ import ymaps from "ymaps";
 import axios from "axios";
 import { mapActions, mapGetters } from "vuex";
 import { mask } from "vue-the-mask";
-import AppForm from '~/components/AppForm.vue'
+import AppForm from "~/components/AppForm.vue";
+import TheamSetting from "~/components/TheamSetting.vue";
 export default {
   directives: {
     mask
@@ -62,6 +104,11 @@ export default {
       control_time: "",
       phoneMask: "#-(###)-###-##-##",
       mobileMask: "#-(###)-###-##-##",
+      items: [
+        { text: "Тема", icon: "fa-paint-brush", fp: "theam" },
+        { text: "Профиль", icon: "fa-user", fp: "prophile"},
+        { text: "Выйти", icon: "fa-sign-out", fp: "logout" }
+      ],
       post: {
         fio: "",
         creDate: date.toISOString().substr(0, 10), //null,
@@ -85,7 +132,6 @@ export default {
       alertText: "",
       loading: false,
       maploader: null,
-      miniVar: true,
       saveLoader: false,
       editor: false,
       maps: null
@@ -94,28 +140,7 @@ export default {
   created() {
     this.post.owner = this.user;
   },
-  mounted() {
-    this.initializeYandexMap();
-    this.saveOption();
-  },
   watch: {
-    miniVar() {
-      let main = document.querySelector("body");
-      if (!this.miniVar) {
-        main.classList.remove("close");
-        main.classList.add("open");
-        localStorage.setItem("asideOpen", "open");
-        this.miniAside(this.miniVar);
-      } else {
-        main.classList.remove("open");
-        main.classList.add("close");
-        localStorage.setItem("asideOpen", "close");
-        this.miniAside(this.miniVar);
-      }
-    },
-    user() {
-      console.log(this.user);
-    },
     addresssearch(val) {
       val && val !== this.post.address && this.querySelections(val);
     },
@@ -130,74 +155,33 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(["user", "isLoginedIn"])
+    ...mapGetters(["userName", "isLoginedIn", "avatar"])
   },
   methods: {
-    ...mapActions(["addPost", "miniAside", "logout"]),
-    async logouted() {
-      await this.logout();
-      if (this.isLoginedIn === "") {
-        this.$router.push("/login");
-      }
-    },
-    saveOption() {
-      let main = document.querySelector("body");
-      if (localStorage.getItem("asideOpen") === "open") {
-        main.classList.remove("close");
-        main.classList.add("open");
-        this.miniAside(false);
-      } else {
-        main.classList.remove("open");
-        main.classList.add("close");
-        this.miniAside(true);
-      }
-    },
-    dateFormat(val) {
-      return moment(val).format("YYYY-MM-DD в HH:mm:ss");
-    },
-    refreshForm() {
-      this.search = "";
-      this.post.fio = "";
-      this.items = [];
-      this.post.control_date = "";
-      this.post.create_date = "";
-      this.post.creDate = "";
-      this.post.conDate = "";
-      this.post.address = null;
-      this.post.addressArr = [];
-      this.post.addresssearch = null;
-      this.post.states = [];
-      this.select = "";
-      this.post.regNumber = "";
-      this.post.phone = "";
-      this.post.text = "";
-    },
-    initializeYandexMap() {
-      ymaps
-        .load(
-          "https://api-maps.yandex.ru/2.1/?apikey=256e028a-94b5-496f-b948-394772dc151a&lang=ru_RU"
-        )
-        .then(maps => {
-          this.maps = maps;
+    ...mapActions(["addPost", "logout"]),
+    async userSettings(fp) {
+      if (fp == "logout") {
+        await this.logout()
+        .then(res => {
+          this.$router.push("/login");
         })
-        .catch(error => console.log("Ошибка!", error));
+        .catch(err => {
+          console.log(err)
+        })
+      }
     },
-    querySelections(v) {
-      this.loading = true;
-      // Simulated ajax query
-      this.maps.suggest(v).then(res => {
-        for (let i = 0; i < res.length; i++) {
-          this.states.push(res[i].value);
-        }
-        this.addressArr = this.states.filter(e => {
-          this.loading = false;
-          return (e || "").toLowerCase().indexOf((v || "").toLowerCase()) > -1;
-        });
-      });
+    openEditForm() {
+      if (this.editor) {
+        this.editor = false;
+      }
+      setTimeout(() => {
+        this.editor = !this.editor;
+      }, 0);
     }
   },
   components: {
-    AppForm
+    AppForm,
+    TheamSetting
   }
 };
 </script>

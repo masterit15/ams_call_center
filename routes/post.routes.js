@@ -1,21 +1,43 @@
 const { Router } = require('express')
+const db = require('../db')
+const Sequelize = require('sequelize')
+const Op = Sequelize.Op
 const path = require('path')
 const auth = require('../middleware/auth.middleware')
 const convert = require('xml-js')
 const fs = require('fs')
 const Post = require('../models/Post');
 const Timeline = require('../models/Timeline');
-const router = Router()
+const User = require('../models/User');
+const router = Router();
 
+/*
+    метод поиска обращения
+*/
+router.get('/search', async (req, res) => {
+    let { term } = req.query
+    // term = term.toLowerCase()
+    Post.findAll({ where: { fio: { [Op.like]: '%'+ term +'%' } } })
+    .then(users => {
+        return res.json({
+            success: true,
+            users
+        });
+    })
+    .catch(err => {
+        return res.json({
+            success: false,
+            message: "Ничего не найдено по вашему запросу!",
+            err
+        });
+    })
+});
 /*
     метод экспорта обращений
 */
-
-router.get('/export', async (req, res) => {
-    await Post.findOne({
-        // _id: id
-    }).then(async (post) => {
-        const exportXML = await convert.json2xml(post, { compact: true, ignoreComment: true, spaces: 4 });
+router.get('/export', auth, paginatedResults(Post), async (req, res) => {
+    //console.log(res.paginatedResults.results)
+    const exportXML = await convert.json2xml(res.paginatedResults.results, { compact: true, ignoreComment: true, spaces: 4 });
         var date = new Date();
         var datenow = date.getDate() + '-' + date.getFullYear() + '-' + date.getFullYear() + '_' + date.getHours() + '-' + date.getMinutes() + '-' + date.getSeconds()
         var files = 'export/' + datenow + '_export.xml'
@@ -26,15 +48,9 @@ router.get('/export', async (req, res) => {
         return res.json({
             success: true,
             message: 'Экспорт обращений завершен',
-            files: path.resolve(__dirname, files)
+            fileName: datenow + '_export.xml',
+            files: files
         });
-    }).catch((err) => {
-        return res.json({
-            success: false,
-            message: 'Ошибка экспорта обращений',
-            err: err
-        });
-    });
 });
 /*
     метод отдачи обращений
@@ -49,31 +65,17 @@ router.get('/', auth, paginatedResults(Post), (req, res) => {
 /* 
     метод добавления обращения
 */
-function formatedate(dateTime){
-    var dateTime = dateTime.split(" ");//dateTime[0] = date, dateTime[1] = time
-    var date = dateTime[0].split(".");
-    var time = dateTime[1].split(":");
-    //(year, month, day, hours, minutes, seconds, milliseconds)
-    return new Date(date[2], date[1], date[0], time[0], time[1], time[2], 0);
-}
 router.post('/add', auth, async (req, res, next) => {
-
-
     let fio             = req.body.fio
     let text            = req.body.text
     let selectstatus    = req.body.selectstatus
     let address         = req.body.address
-    let creDate = formatedate(req.body.creDate)
-    let conDate = formatedate(req.body.conDate)
-    let regNumber       = req.body.regNumber
-    let phoneNumber     = req.body.phoneNumber
-    let mobileNumber    = req.body.mobileNumber
-    let owner = req.user.userId
-    let timeline = []
-    for (i in req.body.timeline){
-        req.body.timeline[i].time = formatedate(req.body.timeline[i].time)
-        timeline.push(req.body.timeline[i])
-    }
+    let credate         = req.body.credate
+    let condate         = req.body.condate
+    let regnumber       = Number(req.body.regnumber)
+    let phonenumber     = req.body.phonenumber
+    let mobilenumber    = req.body.mobilenumber
+    let userId          = Number(req.user.userId)
 
     // валидация полученныйх данных
     if (fio === undefined || text === undefined || address === undefined) {
@@ -83,24 +85,32 @@ router.post('/add', auth, async (req, res, next) => {
         });
     } else {
         // объект нового обращения
-        let newPost = new Post({
+        Post.create({
             fio,   
             text,
             selectstatus,
             address,
-            creDate,
-            conDate,
-            regNumber,
-            phoneNumber,
-            mobileNumber,
-            owner,
-            timeline
-        });
-        // сохранение обращения
-        await newPost.save().then((post) => {
+            credate,
+            condate,
+            regnumber,
+            phonenumber,
+            mobilenumber,
+            userId,
+        })
+        .then(async posts => {
+            let autor = await User.findOne({where:{id: posts.dataValues.userId}, raw: true })
+            let timelines = await Timeline.create({
+                event: 'created',
+                text: `Обращение № ${posts.dataValues.regnumber} было создано`,
+                time: posts.dataValues.credate,
+                postId: posts.dataValues.id,
+                userId: posts.dataValues.userId,
+                autor: autor.login
+              })
             return res.json({
                 success: true,
-                post,
+                posts,
+                timelines,
                 message: 'Обращение успешно добавлено в базу данных.'
             });
         }).catch((err) => {
@@ -110,22 +120,22 @@ router.post('/add', auth, async (req, res, next) => {
                 err: err
             });
         });
+        
     }
 });
-
 /*
     метод получения обращения по ID
 */
 router.get('/:id', async (req, res, next) => {
     let id = req.params.id;
-    await Post.findOne({
-        _id: id
-    }).then((post) => {
+    await Post.findOne({where:{ id }})
+    .then((post) => {
         return res.json({
             success: true,
             post: post
         });
-    }).catch((err) => {
+    })
+    .catch((err) => {
         return res.json({
             success: false,
             message: 'Не удалось получить обращение',
@@ -136,88 +146,118 @@ router.get('/:id', async (req, res, next) => {
 /*
     метод добавления в таймлайн обращения по ID
 */
-router.put('/timeline', auth, async (req, res, next) => {
-    let id = req.body.postId;
-    let timeline = []
-    for (i in req.body.timeline) {
-        timeline.push(req.body.timeline[i])
+router.post('/tml/add', auth, async (req, res, next) => {
+    const {event,text,time,file,postId,userId} = req.body
+    let message
+    if(event == 'comment'){
+        message = 'Комментарий добавлен'
+    }else{
+        message = text
     }
-    await Post.findOne({
-        _id: id
-    }).then((post) => {
-        // post.timeline = timeline
-        post.updateOne({ timeline: timeline }, { timeline: timeline })
-            .then((post) => {
-                return res.json({
-                    success: true,
-                    message: 'Обращение успешно обновлено',
-                    post: post
-                });
-            }).catch((err) => {
-                return res.json({
-                    success: false,
-                    message: 'Не удается обновить обращение',
-                    err: err
-                });
-            });
-    }).catch((err) => {
+    let autor = await User.findOne({where:{id: userId}, raw: true })
+    Timeline.create({
+        event,
+        text,
+        time,
+        file,
+        postId,
+        userId,
+        autor: autor.login
+      }).then(timelines =>{
+        return res.json({
+            success: true,
+            message,
+            timelines
+        });
+      }).catch(err=>{
         return res.json({
             success: false,
-            message: 'Ошибка! что-то пошло не так.',
+            message: 'Не удается добавить комментарий',
             err: err
         });
-    });
+      });
 });
-
+/*
+    метод получение таймлайна по ID обращения
+*/
+router.get('/tml/:id', auth, async (req, res, next) => {
+    let id = req.params.id
+    await Timeline.findAll({where: { postId: id }, raw: true })
+    .then(timelines=>{
+        return res.json({
+            success: true,
+            timelines: timelines
+        });
+    })
+    .catch(err=>{
+        return res.json({
+            success: false,
+            err: err
+        });
+      });
+});
+/*
+    метод удаления таймлайна по ID
+*/
+router.delete('/tml/:id', auth, async (req, res, next) => {
+    let id = req.params.id;
+    Timeline.destroy({
+        where: {id}
+      }).then(timeline => {
+        return res.json({
+            success: true,
+            message: 'Комментарий успешно удален',
+            timeline
+        });
+      })
+      .catch((err) => {
+        return res.json({
+            success: false,
+            message: 'Невозможно удалить комментарий',
+            err: err
+        });
+      })
+});
 /*
     метод обновления обращения по ID
 */
-
-router.put('/', auth, async (req, res, next) => {
-    let fio = req.body.fio
-    let text = req.body.text
-    let selectstatus = req.body.selectstatus
-    let address = req.body.address
-    let creDate = req.body.creDate
-    let conDate = req.body.conDate
-    let regNumber = req.body.regNumber
-    let phoneNumber = req.body.phoneNumber
-    let mobileNumber = req.body.mobileNumber
-    let owner = req.user.userId
-
-    let id = req.body._id;
-
-    await Post.findOne({
-        _id: id
-    }).then((post) => {
-        post.fio = fio
-        post.text = text
-        post.selectstatus = selectstatus
-        post.address = address
-        post.creDate = creDate
-        post.conDate = conDate
-        post.regNumber = regNumber
-        post.phoneNumber = phoneNumber
-        post.mobileNumber = mobileNumber
-        post.owner = owner
-        post.save()
-            .then((post) => {
-                return res.json({
-                    success: true,
-                    message: 'Обращение успешно обновлено',
-                    post: post
-                });
-            }).catch((err) => {
-                return res.json({
-                    success: false,
-                    message: 'Не удается обновить обращение',
-                    err: err
-                });
-            });
-    }).catch((err) => {
+router.put('/:id', auth, async (req, res, next) => {
+    let id = req.params.id
+    let fio             = req.body.fio
+    let text            = req.body.text
+    let selectstatus    = req.body.selectstatus
+    let address         = req.body.address
+    let credate         = req.body.credate
+    let condate         = req.body.condate
+    let regnumber       = Number(req.body.regnumber)
+    let phonenumber     = req.body.phonenumber
+    let mobilenumber    = req.body.mobilenumber
+    let userId          = Number(req.user.userId)
+    // обновление обращения
+    Post.update({
+        fio,   
+        text,
+        selectstatus,
+        address,
+        credate,
+        condate,
+        regnumber,
+        phonenumber,
+        mobilenumber,
+        userId,
+    },{where: {id}
+    })
+    .then(posts => {
+        return res.json({
+            success: true,
+            message: 'Обращение успешно обновлено.',
+            posts,
+        });
+    }).catch(err => {
+        console.log(err)
         return res.json({
             success: false,
-            message: 'Ошибка! что-то пошло не так.',
+            message: 'Не удалось обновить обрашение',
             err: err
         });
     });
@@ -226,23 +266,23 @@ router.put('/', auth, async (req, res, next) => {
     метод удаления обращения по ID
 */
 router.delete('/:id', auth, (req, res, next) => {
-    
     let id = req.params.id;
-    Post.findOneAndDelete({
-        _id: id
-    }).then((post) => {
+    Post.destroy({
+        where: {id}
+      }).then(posts => {
         return res.json({
             success: true,
             message: 'Обращение успешно удалено',
-            post: post
+            posts
         });
-    }).catch((err) => {
+      })
+      .catch((err) => {
         return res.json({
             success: false,
             message: 'Невозможно удалить обращение',
             err: err
         });
-    });
+      })
 })
 /*
     функция очистки папки экспорта
@@ -267,24 +307,57 @@ rmDir = function(dirPath, removeSelf) {
 /*
     функция предварительной обработки, сортировки и фильтрации, перед отдачей на клиентскую часть
 */
+function getTotal(model, searchparam, search, status='Все', sortIsmain='all', userId, dateintervalfrom, dateintervalto, dateinterval){
+    var res
+    if (search !== '' && search !== undefined){
+        res = model.findAll({where:{ searchparam: { [Op.like]: '%'+ search +'%' }}, raw: true })
+        if (searchparam == "fio"){
+            res = model.findAll({where:{fio: { [Op.like]: '%'+ search +'%' }}, raw: true })
+        } else if (searchparam == "mobilenumber"){
+            res = model.findAll({where:{mobilenumber: { [Op.like]: '%'+ search +'%' }}, raw: true })
+        } else if (searchparam == "phonenumber") {
+            res = model.findAll({where:{phonenumber: { [Op.like]: '%'+ search +'%' }}, raw: true })
+        } else if (searchparam == "address") {
+            res = model.findAll({where:{address: { [Op.like]: '%'+ search +'%' }}, raw: true })
+        } else if (searchparam == "text") {
+            res = model.findAll({where:{text: { [Op.like]: '%'+ search +'%' }}, raw: true })
+        } 
+    }else if(dateinterval !== undefined){
+        res = model.findAll({ where:{ credate: { [Op.gt]: dateinterval } } })
+    }else if(dateintervalfrom !== undefined || dateintervalto !== undefined){
+        res = model.findAll({ where:{ credate: { [Op.between]: [dateintervalfrom, dateintervalto] } } })
+    }else if(sortIsmain == 'main'){
+        res = model.findAll({where:{userId}, raw: true })
+    }else if(status !== 'Все'){
+        res = model.findAll({where:{selectstatus: status}, raw: true })
+    }else{
+        res = model.findAll({raw:true})
+    }
+        return res
+}
 function paginatedResults(model) {
     return async (req, res, next) => {
         const page = parseInt(req.query.page)
         const limit = parseInt(req.query.limit)
         const search = req.query.search
         const searchparam = req.query.searchparam
+        const status = req.query.status
         const sortIsmain = req.query.sortIsmain
+        const dateinterval = req.query.dateinterval
+        const dateintervalfrom = req.query.dateintervalfrom
+        const dateintervalto = req.query.dateintervalto
+        const userId = req.query.userId
         const startIndex = (page - 1) * limit
         const endIndex = page * limit
         const results = {}
-        const total = await model.countDocuments().exec()
+        var total = await getTotal(model, searchparam, search, status, sortIsmain, userId, dateintervalfrom, dateintervalto, dateinterval)
         results.pagin = {
             currentPage: page,
-            total: total,
+            total: total.length,
             limit: limit,
-            pageCount: Math.ceil(total / limit)
+            pageCount: Math.ceil(total.length / limit)
         }
-        if (endIndex < await model.countDocuments().exec()) {
+        if (endIndex < total.length) {
             results.next = {
                 page: page + 1,
             }
@@ -299,34 +372,119 @@ function paginatedResults(model) {
                 условие поиска обращений
             */
             if (search !== '' && search !== undefined){
-                var regsearch = new RegExp("" + search + "");
-                // results.results = await model.find({ $text: { $search: search}}, { score: { $meta: "textScore" } }).sort({score: {$meta: "textScore"}}).limit(limit).skip(startIndex).exec()
                 if (searchparam == "fio"){
-                    results.results = await model.find({ fio: { $regex: regsearch } })
+                    results.results = await model.findAll({where:{fio: { [Op.like]: '%'+ search +'%' }},
+                    order:[
+                        ["id" , 'DESC']
+                    ],
+                    offset:(startIndex),
+                    limit : limit,
+                    raw: true 
+                })
                     res.paginatedResults = results
-                } else if (searchparam == "mobileNumber"){
-                    results.results = await model.find({ mobileNumber: { $regex: regsearch } })
+                } else if (searchparam == "mobilenumber"){
+                    results.results = await model.findAll({where:{mobilenumber: { [Op.like]: '%'+ search +'%' }},
+                    order:[
+                        ["id" , 'DESC']
+                    ],
+                    offset:(startIndex),
+                    limit : limit,
+                    raw: true 
+                })
                     res.paginatedResults = results
-                } else if (searchparam == "phoneNumber") {
-                    results.results = await model.find({ phoneNumber: { $regex: regsearch } })
+                } else if (searchparam == "phonenumber") {
+                    results.results = await model.findAll({where:{phonenumber: { [Op.like]: '%'+ search +'%' }},
+                    order:[
+                        ["id" , 'DESC']
+                    ],
+                    offset:(startIndex),
+                    limit : limit,
+                    raw: true 
+                })
                     res.paginatedResults = results
                 } else if (searchparam == "address") {
-                    results.results = await model.find({ address: { $regex: regsearch } })
+                    results.results = await model.findAll({where:{address: { [Op.like]: '%'+ search +'%' }},
+                    order:[
+                        ["id" , 'DESC']
+                    ],
+                    offset:(startIndex),
+                    limit : limit,
+                    raw: true 
+                })
                     res.paginatedResults = results
                 } else if (searchparam == "text") {
-                    results.results = await model.find({ text: { $regex: regsearch } })
+                    results.results = await model.findAll({where:{text: { [Op.like]: '%'+ search +'%' }},
+                    order:[
+                        ["id" , 'DESC']
+                    ],
+                    offset:(startIndex),
+                    limit : limit,
+                    raw: true 
+                })
                     res.paginatedResults = results
-                }
-                
-            }else{
-                /*
-                    условие сортировки обращений по принадлежности к текущему пользователю
-                */
+                } 
+            }else if(status !== 'Все'){
+                results.results = await model.findAll({
+                    where:{selectstatus: status},
+                        order:[
+                            ["id" , 'DESC']
+                        ],
+                        offset:(startIndex),
+                        limit : limit,
+                    raw: true 
+                })
+                results.results
+                res.paginatedResults = results
+            }
+            else if(dateinterval !== undefined){
+                results.results = await model.findAll({
+                    where:{credate: {
+                        [Op.gt]: dateinterval
+                        //[Op.lte]: dateintervalto
+                    } },
+                        order:[
+                            ["id" , 'DESC']
+                        ],
+                        offset:(startIndex),
+                        limit : limit,
+                })
+                results.results
+                res.paginatedResults = results
+            }
+            else if(dateintervalfrom !== undefined || dateintervalto !== undefined){
+                results.results = await model.findAll({
+                    where:{credate: {
+                        [Op.between]: [dateintervalfrom, dateintervalto]
+                        //[Op.lte]: dateintervalto
+                    } },
+                        order:[
+                            ["id" , 'DESC']
+                        ],
+                        offset:(startIndex),
+                        limit : limit,
+                })
+                results.results
+                res.paginatedResults = results
+            }
+            else{
                 if (sortIsmain == 'main'){
-                    results.results = await model.find({ owner: req.user.userId }).limit(limit).skip(startIndex).exec()
+                    results.results = await model.findAll(
+                        { where: {userId}, 
+                        order:[
+                            ["id" , 'DESC']
+                        ],
+                        offset:(startIndex),
+                        limit : limit,
+                    })
                     res.paginatedResults = results
                 }else{
-                    results.results = await model.find().limit(limit).skip(startIndex).exec()
+                    results.results = await model.findAll({
+                        order:[
+                            ["id" , 'DESC']
+                        ],
+                        offset:(startIndex),
+                        limit : limit,
+                    })
                     res.paginatedResults = results
                 }
             }

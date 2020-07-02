@@ -1,8 +1,8 @@
 import axios from "axios";
-import router from '../router'
 export default ({
   state: {
     posts: [],
+    timeline: [],
     message: "",
     autor: [],
     poststatus: ["Все"],
@@ -18,80 +18,79 @@ export default ({
     SET_STATUS(state, poststatus) {
       state.poststatus = poststatus
     },
+    SET_TIMELINE(state, timeline){
+      state.timeline = timeline
+    },
     SET_PAGIN(state, pagin) {
       state.pagin = pagin
     },
   },
   actions: {
-    async exportsXML(ctx, data){
-      let res = await axios.get('/api/posts/export', data)
+    async exportsXML(ctx, params){
+      let pagin = params.pagin
+      let res = await axios.get('/posts/export/', {
+        params: pagin
+      })
       return res
     },
-    addPost({ commit, dispatch }, post) {
-      console.log(post)
-      axios.post('/api/posts/add', post)
-        .then(response => {
-          if (response.data.success) {
-            dispatch('loadPost')
-            message = "Обращение успешно добавлено"
-            commit("SET_MESSAGE", message)
-            commit("SET_POSTS", posts)
-          }
-        })
+    async addPost({commit}, post) {
+      let res = await axios.post('/posts/add', post)
+      return res
     },
-    loadPost({ commit }, params) {
-      let pagin = params.pagin
-      axios.get("/api/posts/",
+    async loadPost({ commit }, params = null) {
+      var pagin = {}
+      if(params !== null){
+        pagin = params.pagin
+      }else{
+        pagin = {
+          page: 1,
+          limit: 6,
+          status: "Все",
+        }
+      }
+      let res = await axios.get("/posts/",
         {
           params: pagin
         }
       )
-      .then(response => {
+      if(res.data.success){
         var poststatus = ["Все"]
-        for (let i in response.data.posts.results) {
-          poststatus.push(response.data.posts.results[i].selectstatus)
+        for (let i in res.data.posts.results) {
+          poststatus.push(res.data.posts.results[i].selectstatus)
         }
         commit("SET_STATUS", poststatus)
-        let posts
-        if (params.status != "Все") {
-          //posts = response.data.posts.results.find(post => post.selectstatus === params.status)
-          posts = response.data.posts.results.filter(post => post.selectstatus == params.status)
-        } else {
-          posts = response.data.posts.results
-        }
-        let pagin = response.data.posts.pagin
+        let posts = res.data.posts.results
+        let pagin = res.data.posts.pagin
         commit("SET_POSTS", posts)
         commit("SET_PAGIN", pagin)
-      })
-      .catch(error =>{
-        // console.log(error)
-        // if (error){
-        //   router.push('/')
-        // }
-      })
+      }
+
+    },
+    async editPostTimeline({ commit}, params) {
+      let res = await axios.post("/posts/tml/add", params)
+      return res
+    },
+    async loadTimeline({commit}, postId) {
+      let res = await axios.get(`/posts/tml/${postId}`)
+      commit('SET_TIMELINE', res.data.timelines)
+      if(res.data.success){
+      return res.data.timelines
+      }
+    },
+    async deleteTimelineItem({ commit, dispatch }, id) {
+        let res = await axios.delete(`/posts/tml/${id}`)
+        return res
     },
     async editPost({commit}, post) {
       if (confirm("Вы уверены что хотите редактировать обращение?")) {
-      let res = await axios.put("/api/posts/", post)
+      let res = await axios.put(`/posts/${post.id}`, post)
       return res
       }
     },
-    async editPostTimeline({ commit, dispatch }, post) {
-        let res = await axios.put("/api/posts/timeline", post)
-        return res
-    },
-    deletePost({ commit, dispatch }, id, index) {
+    async deletePost({ commit, dispatch }, id) {
       if (confirm("Вы уверены что хотите удалить обращение?")) {
-        axios.delete(`/api/posts/${id}`).then(response => {
-          if (response.data.success) {
-            let message = response.data.message
-            dispatch('loadPost')
-            commit("SET_MESSAGE", message)
-          } else {
-            let message = response.data.message
-            commit("SET_MESSAGE", message)
-          }
-        });
+        let res = await axios.delete(`/posts/${id}`)
+        return res
       }
     },
   },
@@ -110,6 +109,7 @@ export default ({
     },
     pagination(state) {
       return state.pagin
-    }
+    },
+    timelines: state => state.timeline
   }
 })

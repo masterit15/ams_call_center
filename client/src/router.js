@@ -50,20 +50,29 @@ const router =  new Router({
         layout: 'main',
         requiresAuth: true
       }
-    }
+    },
+    {
+      path: '/prophile',
+      name: 'Профиль',
+      component: () => import('./views/Prophile.vue'),
+      meta: {
+        layout: 'main',
+        requiresAuth: true
+      }
+    },
   ]
 })
 
 router.beforeEach((to, from, next) => {
   if (to.matched.some(record => record.meta.requiresAuth)){
-    if (!store.getters.isLoginedIn){
+    if (!localStorage.getItem('user_id')){
       // делаем редирект на страницу авторизации
       next('/login')
     }else{
       next()
     }
   } else if (to.matched.some(record => record.meta.requiresGuest)){
-    if (store.getters.isLoginedIn) {
+    if (localStorage.getItem('user_id')) {
       // делаем редирект на главную страницу
       next('/')
     } else {

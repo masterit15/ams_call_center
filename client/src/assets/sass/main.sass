@@ -1,8 +1,8 @@
-@import "/utils/libs"
-@import "/utils/vars"
-@import "/utils/mixins"
-@import "/utils/fonts"
-@import "/utils/reset"
+@import "./utils/libs"
+@import "./utils/vars"
+@import "./utils/mixins"
+@import "./utils/fonts"
+@import "./utils/reset"
 
 html
   line-height: $mainLineHeight
@@ -84,7 +84,13 @@ section,
     max-width: $phoneWidth
   @media screen and (max-width: $phoneWidth)
     max-width: $smPhoneWidth
-
+.headers, .main-content, .footers
+  margin-left: 80px
+  transition: margin-left 0.3s ease
+.open 
+  & .main-content,.headers,.footers
+    margin-left: 300px
+    transition: margin-left 0.3s ease 
 .add_form
   position: fixed
   display: block
@@ -93,8 +99,8 @@ section,
   right: 0
   top: 0
   // overflow: auto
-  backdrop-filter: blur(10px)
-  -moz-backdrop-filter: blur(10px)
+  // backdrop-filter: blur(10px)
+  // -moz-backdrop-filter: blur(10px)
   background-color: rgba(#fff, 1)
   z-index: 9999
   & .v-form
@@ -121,14 +127,46 @@ section,
     display: block
     width: 60px
     height: 50px
-    border-radius: 80px 0px 0px 80px
-    background-color: rgba(#000, 0.5)
+    border-radius: 10px 0px 0px 10px
+    background-color: #fff
     left: -60px
     top: 20px
+    box-shadow: -8px 3px 7px rgba(0,0,0,.12)!important
     & .v-btn
       position: absolute
       width: 100%
       height: 100%
+      border-radius: 0
+  &_edit
+    position: absolute
+    display: block
+    width: 60px
+    height: 50px
+    border-radius: 10px 0px 0px 10px
+    background-color: #fff
+    left: -60px
+    top: 90px
+    box-shadow: -8px 3px 7px rgba(0,0,0,.12)!important
+    & .v-btn
+      position: absolute
+      width: 100%
+      height: 100% 
+      border-radius: 0 
+  &_delete
+    position: absolute
+    display: block
+    width: 60px
+    height: 50px
+    border-radius: 10px 0px 0px 10px
+    background-color: #fff
+    left: -60px
+    top: 160px
+    box-shadow: -8px 3px 7px rgba(0,0,0,.12)!important
+    & .v-btn
+      position: absolute
+      width: 100%
+      height: 100% 
+      border-radius: 0      
 
 .footer
   // padding: 20px
@@ -219,3 +257,18 @@ section,
     max-width: 100%
     min-width: 0
     width: 100%
+.auth
+  &_page
+    width: 100%
+    min-height: 100vh
+    position: relative
+    background-position: 50% 50%
+    background-size: cover
+    background-repeat: no-repeat
+  &_form
+    margin-top: 8rem    
+.toast
+  &.success
+    background-color: rgba(93, 175, 112, 0.88)
+  &.error
+    background-color: rgba(208, 94, 94, 0.88)

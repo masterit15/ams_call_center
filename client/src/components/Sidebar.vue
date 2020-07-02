@@ -1,24 +1,30 @@
 <template>
-  <div>
     <v-navigation-drawer
       v-model="drawer"
-      :color="color"
+      :dark="barColor !== 'rgba(228, 226, 226, 1), rgba(255, 255, 255, 0.7)'"
+      color="primary"
       :expand-on-hover="expandOnHover"
+      :src="barImage"
       :mini-variant="miniVariant"
       :right="right"
       :width="width"
       :fixed="fixed"
+      v-bind="$attrs"
       absolute
-      dark
+      permanent
     >
+    <template v-slot:img="props">
+      <v-img
+        :gradient="`to bottom, ${barColor}`"
+        v-bind="props"
+      />
+    </template>
+
       <v-list dense nav class="py-0">
         <v-list-item two-line>
-          <v-list-item-avatar color="amber lighten-2">
-          <v-icon dark>fa-user-o</v-icon>
-          </v-list-item-avatar>
-          <v-list-item-content>
-            <v-list-item-title>{{user}}</v-list-item-title>
-          </v-list-item-content>
+          <v-btn class="menu-open" icon @click="miniVariant = !miniVariant" right>
+            <v-icon>fa-outdent</v-icon>
+          </v-btn>
         </v-list-item>
 
         <v-divider></v-divider>
@@ -28,7 +34,6 @@
             <v-list-item-icon>
               <v-icon>{{ item.icon }}</v-icon>
             </v-list-item-icon>
-
             <v-list-item-content>
               <v-list-item-title>{{ item.title }}</v-list-item-title>
             </v-list-item-content>
@@ -36,11 +41,10 @@
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
-  </div>
 </template>
 
 <script>
-import { mapGetters, mapActions } from 'vuex';
+import { mapGetters, mapActions, mapState } from 'vuex';
 export default {
   data() {
     return {
@@ -51,25 +55,68 @@ export default {
         { title: "Архив", icon: "fa-archive", href: "/archive" },
         { title: "Статистика", icon: "fa-pie-chart", href: "/statistic" },
         { title: "Пользователи", icon: "fa-users", href: "/users" },
-        { title: "Настройки", icon: "fa-cogs", href: "/options" }
       ],
-      color: "indigo",
-      colors: ["primary", "blue", "success", "red", "teal"],
       right: false,
       width: 300,
       fixed: true,
-      background: false
+      background: false,
+      miniVariant: Boolean(localStorage.getItem('sidebar')) || true,
+      expandOnHover: Boolean(localStorage.getItem('sidebar')) || true,
     };
   },
-  mounted() {
+  watch: {
+    miniVariant(){
+      let main = document.querySelector("body");
+      if (!this.miniVariant) {
+        main.classList.remove("close");
+        main.classList.add("open");
+        localStorage.setItem("asideOpen", "open");
+        this.expandOnHover = false
+        localStorage.setItem('sidebar', 0)
+      } else {
+        localStorage.setItem('sidebar', 1)
+        main.classList.remove("open");
+        main.classList.add("close");
+        localStorage.setItem("asideOpen", "close");
+        this.expandOnHover = true
+      }
+    }
   },
   computed: {
-    ...mapGetters(['user', 'isLoginedIn', 'miniVariant', 'expandOnHover'])
+    ...mapGetters([
+    'user',
+    'avatar', 
+    'isLoginedIn', 
+    'barColor', 
+    'barImage'
+    ])
   },
+  mounted(){
+    let main = document.querySelector("body");
+      if (localStorage.getItem("asideOpen") === "open") {
+        main.classList.remove("close");
+        main.classList.add("open");
+        this.miniVariant = false
+        this.expandOnHover = false
+      } else {
+        main.classList.remove("open");
+        main.classList.add("close");
+        this.miniVariant = true
+        this.expandOnHover = true
+      }
+  },
+  methods: {
+    ...mapActions([''])
+  }
 };
 </script>
 
-<style>
+<style scoped>
+.v-navigation-drawer{
+  position: fixed;
+  min-width: 80px;
+  z-index: 20;
+}
 .logout {
   position: fixed;
   left: 10px;
@@ -124,13 +171,5 @@ export default {
   float: right;
   transform: rotate(0deg);
   transition: all 0.3s ease;
-}
-.headers, .main-content {
-  margin-left: 80px;
-  transition: margin-left 0.3s ease;
-}
-.open .main-content, .open .headers {
-  margin-left: 300px;
-  transition: margin-left 0.3s ease;
 }
 </style>
