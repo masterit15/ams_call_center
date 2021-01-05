@@ -39,7 +39,7 @@
     "@babel/preset-env": "^7.9.6",
     "@material/textfield": "^4.0.0",
     "autoprefixer": "^9.7.6",
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "babel-loader": "^8.1.0",
     "bcrypt": "^3.0.8",
     "bootstrap": "^4.4.1",
